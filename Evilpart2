@@ -1,11 +1,11 @@
 --[[
-    Evil Morty Script v9.0
+    Evil Morty Script v10.0
     Part 2 / 3 — МОДУЛИ: Scanner, Highlight, Teleport, Shield.
 ]]
 
 local CTX = _G.EvilMorty
 if not CTX then
-    warn("[EvilMorty] Part1 не загружен. Сначала выполни Part1_Core.lua")
+    warn("[EvilMorty] Part1 не загружен. Сначала выполни Part1")
     return
 end
 
@@ -78,17 +78,13 @@ function Scanner.Init()
 
                     local held = {}
                     for _, t2 in pairs(char:GetChildren()) do
-                        if t2:IsA("Tool") then
-                            table.insert(held, "[РУКА] " .. t2.Name)
-                        end
+                        if t2:IsA("Tool") then table.insert(held, "[РУКА] " .. t2.Name) end
                     end
 
                     local bp = plr:FindFirstChildOfClass("Backpack")
                     if bp then
                         for _, t2 in pairs(bp:GetChildren()) do
-                            if t2:IsA("Tool") then
-                                table.insert(held, "[СУМКА] " .. t2.Name)
-                            end
+                            if t2:IsA("Tool") then table.insert(held, "[СУМКА] " .. t2.Name) end
                         end
                     end
 
@@ -154,7 +150,7 @@ function Highlight.Init()
                         b.Name = "EvilBox"
                         b.Adornee = hrp
                         b.Color3 = Color3.fromRGB(255, 0, 0)
-                        b.LineThickness = 0.15
+                        b.LineThickness = 0.2
                         b.Parent = hrp
                     end
                     if head and not bill then
@@ -189,7 +185,7 @@ function Highlight.Disable() Highlight.enabled = false end
 function Highlight.Toggle()  if Highlight.enabled then Highlight.Disable() else Highlight.Enable() end end
 
 -- ============================================================
--- МОДУЛЬ: TELEPORT
+-- МОДУЛЬ: TELEPORT (правильный ТП вперёд)
 -- ============================================================
 local Teleport = {}
 
@@ -198,12 +194,11 @@ function Teleport.TP30S()
     if not hrp then return end
 
     local start = hrp.CFrame.Position
-    local target = camera.CFrame.Position + camera.CFrame.LookVector * 30
-    local safe = U.raycastGround(target)
+    local target = U.teleportForward(30) -- исправлено: идём от HRP по горизонтали
 
     U.teleportEffect(start)
-    hrp.CFrame = CFrame.new(safe)
-    U.teleportEffect(safe)
+    hrp.CFrame = CFrame.new(target)
+    U.teleportEffect(target)
     U.teleportSound(hrp)
 end
 
@@ -218,6 +213,7 @@ function Teleport.TeleportToPortal(portal)
 
     local finalPos
     if math.abs(normal.Y) > 0.7 then
+        -- портал на полу/потолке
         local flat = Vector3.new(portalPos.X - start.X, 0, portalPos.Z - start.Z)
         if flat.Magnitude < 0.5 then
             flat = Vector3.new(camera.CFrame.LookVector.X, 0, camera.CFrame.LookVector.Z)
@@ -230,11 +226,13 @@ function Teleport.TeleportToPortal(portal)
             finalPos = Vector3.new(finalPos.X, portalPos.Y - 6, finalPos.Z)
         end
     else
+        -- портал на стене
         finalPos = portalPos + normal * 5
         local ground = U.raycastGround(finalPos)
         finalPos = Vector3.new(finalPos.X, ground.Y, finalPos.Z)
     end
 
+    -- Смотрим на портал
     local lookDir = portalPos - finalPos
     lookDir = Vector3.new(lookDir.X, 0, lookDir.Z)
     if lookDir.Magnitude < 0.1 then
@@ -253,7 +251,7 @@ end
 function Teleport.Init() end
 
 -- ============================================================
--- МОДУЛЬ: SHIELD
+-- МОДУЛЬ: SHIELD (не тронут)
 -- ============================================================
 local Shield = {}
 Shield.enabled = false
@@ -304,15 +302,12 @@ function Shield.Toggle()  if Shield.enabled then Shield.Disable() else Shield.En
 
 function Shield.Init()
     LP.CharacterAdded:Connect(function()
-        if Shield.enabled then
-            task.wait(1)
-            Shield.Make()
-        end
+        if Shield.enabled then task.wait(1) Shield.Make() end
     end)
 end
 
 -- ============================================================
--- ИНИЦИАЛИЗАЦИЯ И КНОПКИ
+-- ИНИЦИАЛИЗАЦИЯ
 -- ============================================================
 Scanner.Init()
 Highlight.Init()
@@ -353,4 +348,4 @@ U.makeButton(main, "Щит: ВЫКЛ", y, function(self)
 end)
 y = y + 50
 
-CTX.log("Модули Part2 загружены (Scanner, Highlight, Teleport, Shield).")
+CTX.log("Part2 загружен: Scanner, Highlight, Teleport, Shield.")
